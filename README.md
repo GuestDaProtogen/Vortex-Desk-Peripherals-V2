@@ -5,6 +5,7 @@ A system that control stuff on my desk.
   <img src="https://github.com/user-attachments/assets/9d033d4f-a02f-4edc-8bd6-fde379dc1c16" width="49%" />
 </p>
 
+i made this with a help of AI so it is a mess
 ## Software:
 This project runs python 3.9 <br/>
 Requiered libraries:
