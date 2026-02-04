@@ -54,7 +54,7 @@ uint8_t hexVal(char c) {
 void matrixInit(){
   for(int d=0; d<4; d++){
     lc.shutdown(d,false);
-    lc.setIntensity(d, 2);  // lower current
+    lc.setIntensity(d, 1);  // lower current
     lc.clearDisplay(d);
   }
 }
