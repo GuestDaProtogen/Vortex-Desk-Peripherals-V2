@@ -1,12 +1,19 @@
 # -*- mode: python ; coding: utf-8 -*-
+from PyInstaller.utils.hooks import collect_all
+
+datas = [('Icon.ico', '.'), ('./Font/Audiowide-Regular.ttf', '.'), ('./Font/NotoSans-Regular.ttf', '.'), ('./vortexlogo.png', '.')]
+binaries = []
+hiddenimports = ['winsdk', 'winrt', 'pyside6', 'requests', 'pyserial', 'PIL', 'comtypes']
+tmp_ret = collect_all('winsdk')
+datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 
 
 a = Analysis(
     ['vortex_gui_qt.py'],
     pathex=[],
-    binaries=[],
-    datas=[('vortexlogo.png', '.'), ('Icon.ico', '.'), ('Font', 'Font')],
-    hiddenimports=[],
+    binaries=binaries,
+    datas=datas,
+    hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

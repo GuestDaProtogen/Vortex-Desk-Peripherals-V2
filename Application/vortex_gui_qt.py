@@ -22,6 +22,7 @@ import atexit
 from datetime import datetime
 from queue import Queue, Empty
 
+
 # Force STA for comtypes everywhere
 sys.coinit_flags = 2  # COINIT_APARTMENTTHREADED
 
@@ -33,6 +34,7 @@ import psutil
 from unidecode import unidecode
 from PIL import ImageGrab, Image
 from screeninfo import get_monitors
+from PySide6 import QtWidgets, QtCore, QtGui
 
 # Optional: numpy for VU worker
 try:
@@ -118,6 +120,81 @@ def rotate_log_if_needed():
     except Exception:
         pass
 
+class IRControllerWindow(QtWidgets.QWidget):
+    def __init__(self, backend_ref):
+        super().__init__()
+        self.backend = backend_ref
+        self.setWindowTitle("IR Controller")
+        self.resize(300, 400)
+        # Keep window strictly as a tool window or regular window
+        self.setWindowFlags(QtCore.Qt.Window)
+
+        layout = QtWidgets.QVBoxLayout()
+        self.setLayout(layout)
+
+        # Title
+        lbl = QtWidgets.QLabel("RGB LED Control")
+        lbl.setAlignment(QtCore.Qt.AlignCenter)
+        lbl.setStyleSheet("font-weight: bold; font-size: 14px;")
+        layout.addWidget(lbl)
+
+        # Buttons Grid
+        grid_layout = QtWidgets.QGridLayout()
+        layout.addLayout(grid_layout)
+
+        self.commands = [
+            ("Power ON", 0xC2, "#4CAF50"),
+            ("Power OFF", 0xB0, "#F44336"),
+            ("Strobe",    0x38, "#FF9800"),
+            ("Mid Bright",0x5A, "#2196F3"),
+            ("Bright +",  0xE0, "#E0E0E0"),
+            ("Bright -",  0x90, "#9E9E9E"),
+            ("3H Timer",  0x22, "#607D8B"),
+            ("5H Timer",  0x68, "#607D8B"),
+            ("8H Timer",  0xA8, "#607D8B"),
+        ]
+
+        row, col = 0, 0
+        for name, code, color in self.commands:
+            btn = QtWidgets.QPushButton(name)
+            btn.setStyleSheet(f"background-color: {color}; color: black; font-weight: bold; padding: 6px;")
+            # Lambda to capture the specific code for each button
+            btn.clicked.connect(lambda checked=False, c=code: self.send_code(c))
+            
+            grid_layout.addWidget(btn, row, col)
+            col += 1
+            if col > 2:
+                col = 0
+                row += 1
+
+        # Custom Input
+        layout.addSpacing(15)
+        layout.addWidget(QtWidgets.QLabel("Custom Hex Command:"))
+        input_layout = QtWidgets.QHBoxLayout()
+        self.txt_hex = QtWidgets.QLineEdit()
+        self.txt_hex.setPlaceholderText("e.g. F7")
+        self.btn_send = QtWidgets.QPushButton("Send")
+        self.btn_send.clicked.connect(self.send_custom)
+        input_layout.addWidget(QtWidgets.QLabel("0x"))
+        input_layout.addWidget(self.txt_hex)
+        input_layout.addWidget(self.btn_send)
+        layout.addLayout(input_layout)
+
+    def send_code(self, code_int):
+        hex_str = f"{code_int:02X}"
+        cmd = f"IR:{hex_str}"
+        print(f"Sending IR: {cmd}")
+        if self.backend and self.backend.serial:
+            self.backend.serial.send_line(cmd)
+
+    def send_custom(self):
+        text = self.txt_hex.text().strip()
+        if not text: return
+        try:
+            val = int(text, 16)
+            self.send_code(val)
+        except ValueError:
+            QtWidgets.QMessageBox.warning(self, "Error", "Invalid Hex Code")
 
 # ---------------- Logging ----------------
 _LOG_QUEUE = Queue()
@@ -1906,7 +1983,7 @@ class MainWindow(QtWidgets.QWidget):
         super().__init__()
         self.backend = backend
         self.assets_dir = os.path.abspath(os.path.dirname(__file__))
-
+        self.ir_window = IRControllerWindow(self.backend)
         self.setWindowTitle("Vortex Desk Peripherals")
         self.setWindowFlag(QtCore.Qt.FramelessWindowHint, True)
         self.setAttribute(QtCore.Qt.WA_TranslucentBackground, True)
@@ -2056,6 +2133,14 @@ class MainWindow(QtWidgets.QWidget):
 
             act_show = menu.addAction("Show")
             act_hide = menu.addAction("Hide to tray")
+            menu.addSeparator()
+
+            # --- IR Controller Action ---
+            action_ir = menu.addAction("Open IR Controller")
+            # FIX: Use self.ir_window.show
+            action_ir.triggered.connect(self.ir_window.show) 
+            # ----------------------------
+
             menu.addSeparator()
             act_quit = menu.addAction("Quit")
 

@@ -4,6 +4,11 @@
 #include <LedControl.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+#include <IRremoteESP8266.h>
+#include <IRsend.h>
+
+const uint16_t kIrLed = D6; // D6 is GPIO 12 on NodeMCU
+IRsend irsend(kIrLed);
 
 
 bool channelMode = false;
@@ -681,6 +686,21 @@ void switchMode(uint8_t newModeRaw){
   }
 }
 
+// Helper function to send NEC commands based on your list
+void sendIRCommand(uint8_t cmd) {
+  // Assuming NEC Standard: Address 0x00
+  // Structure: Address (8) | ~Address (8) | Command (8) | ~Command (8)
+  // For Address 0x00: 0x00FF...
+  
+  uint32_t payload = 0x00FF0000;
+  payload |= (cmd << 8);
+  payload |= (~cmd & 0xFF); 
+
+  irsend.sendNEC(payload, 32);
+}
+
+
+
 // ---------- COMMANDS ----------
 void showVolumeOverlay(int vol, const String& dev){
   volumeOverlay = true;
@@ -776,10 +796,19 @@ void handleCommand(String cmdRaw){
     return;
   }
 
+  
+
 
   // VU overlay toggle
   if(cmd=="VUMODE:ON"){ vuEnabled = true; clearMatrixFast(); vuLastDraw = millis(); return; }
   if(cmd=="VUMODE:OFF"){ vuEnabled = false; clearMatrixFast(); return; }
+
+  if (cmd.startsWith("IR:")) {
+    // Parse hex string (e.g., "IR:C2")
+    String hexCode = cmd.substring(3);
+    uint8_t cmd = (uint8_t) strtol(hexCode.c_str(), NULL, 16);
+    sendIRCommand(cmd);
+  }
 
   // VU frame
   if(cmd.startsWith("V:")){
@@ -972,6 +1001,7 @@ void handleCommand(String cmdRaw){
 
 // ---------- SETUP ----------
 void setup(){
+  irsend.begin();
   Serial.begin(115200);
   lcd.begin(); lcd.backlight();
   initLastLineCache();
