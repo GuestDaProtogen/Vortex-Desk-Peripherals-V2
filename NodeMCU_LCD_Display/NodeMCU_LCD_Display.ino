@@ -72,6 +72,7 @@ void renderLevels(int l0,int l1,int l2,int l3){
   drawBar(0,l0); drawBar(1,l1); drawBar(2,l2); drawBar(3,l3);
 }
 
+
 // ===== 8×8 digit font for MAX7219 clock (fixed) =====
 const byte DIGIT[10][8] = {
 //0

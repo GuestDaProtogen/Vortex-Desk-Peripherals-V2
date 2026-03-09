@@ -1399,8 +1399,10 @@ class Backend:
                             a = requests.get(self.astro_api, timeout=5)
                             c = requests.get(self.core_api, timeout=5)
                             if a.status_code == 200 and c.status_code == 200:
-                                astro = max(0, int(a.json()['data'][0]['playing']))
-                                core  = max(0, int(c.json()['data'][0]['playing']))
+                                a_data = a.json().get('data', [])
+                                c_data = c.json().get('data', [])
+                                astro = max(0, int(a_data[0].get('playing', 0))) if a_data else 0
+                                core  = max(0, int(c_data[0].get('playing', 0))) if c_data else 0
                                 self.send_to_device(f"LIVE:{astro},{core}")
                                 error_count = 0
                             else:
