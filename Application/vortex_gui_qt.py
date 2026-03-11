@@ -1923,7 +1923,7 @@ class MatrixWidget(QtWidgets.QWidget):
 
         p.fillRect(self.rect(), QtGui.QColor(0,0,0,0))
 
-        led_on = QtGui.QColor(255, 60, 60)
+        led_on = QtGui.QColor(4, 94, 255)
         led_off = QtGui.QColor(102, 102, 102, 180)
 
         pad = 10
